@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinTrack — Gelir &amp; Gider Takibi</title>
+  <meta name="description" content="Modern, dark mode gelir gider masraf takip uygulaması" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════
+     CUSTOM TITLEBAR
+══════════════════════════════════════════ -->
+<div id="titlebar">
+  <div class="titlebar-left">
+    <div class="titlebar-logo">
+      <div class="logo-icon">F</div>
+      <span>FinTrack</span>
+    </div>
+    <button id="btn-menu-toggle" title="Menüyü Aç/Kapat (Ctrl+B)">☰</button>
+  </div>
+  <div class="titlebar-center">
+    <span class="live-dot"></span>
+    <span id="titlebar-period">Yükleniyor...</span>
+  </div>
+  <div class="window-controls">
+    <button class="win-btn" id="btn-minimize" title="Küçült">─</button>
+    <button class="win-btn" id="btn-maximize" title="Büyüt/Küçült">□</button>
+    <button class="win-btn close" id="btn-close" title="Kapat">✕</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     APP CONTAINER
+══════════════════════════════════════════ -->
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <!-- Year Nav -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Dönem</div>
+      <div class="year-nav">
+        <button id="btn-prev-year" title="Önceki Yıl">‹</button>
+        <span id="current-year">2026</span>
+        <button id="btn-next-year" title="Sonraki Yıl">›</button>
+      </div>
+    </div>
+
+    <!-- Month Grid -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Ay</div>
+      <div class="month-grid" id="month-grid">
+        <button class="month-btn" data-month="1">Oca</button>
+        <button class="month-btn" data-month="2">Şub</button>
+        <button class="month-btn" data-month="3">Mar</button>
+        <button class="month-btn" data-month="4">Nis</button>
+        <button class="month-btn" data-month="5">May</button>
+        <button class="month-btn" data-month="6">Haz</button>
+        <button class="month-btn" data-month="7">Tem</button>
+        <button class="month-btn" data-month="8">Ağu</button>
+        <button class="month-btn" data-month="9">Eyl</button>
+        <button class="month-btn" data-month="10">Eki</button>
+        <button class="month-btn" data-month="11">Kas</button>
+        <button class="month-btn" data-month="12">Ara</button>
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <!-- Nav -->
+    <nav class="sidebar-nav">
+      <div class="nav-item active" data-view="dashboard">
+        <span class="nav-icon">📊</span>
+        <span>Genel Bakış</span>
+      </div>
+      <div class="nav-item" id="nav-budget" data-view="budget">
+        <span class="nav-icon">🎯</span>
+        <span>Bütçe Hedefleri</span>
+      </div>
+      <div class="nav-item" id="nav-recurring" data-view="recurring">
+        <span class="nav-icon">🔁</span>
+        <span>Tekrarlayan</span>
+      </div>
+      <div class="nav-item" id="nav-cards" data-view="cards">
+        <span class="nav-icon">💳</span>
+        <span>Kartlarım</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-divider"></div>
+
+    <!-- Bottom Stats -->
+    <div class="sidebar-bottom">
+      <div class="sidebar-stat-row">
+        <div class="sidebar-stat">
+          <span class="sidebar-stat-label">Bu Ay Net</span>
+          <span class="sidebar-stat-value" id="sidebar-net" style="color:var(--income)">₺0</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="sidebar-stat-label">Harcama</span>
+          <span class="sidebar-stat-value" id="sidebar-exp" style="color:var(--expense)">₺0</span>
+        </div>
+      </div>
+      <div style="margin-top:10px;">
+        <button class="btn btn-ghost" style="width:100%;justify-content:center;font-size:12px;" id="btn-export">
+          📤 CSV Dışa Aktar
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="main">
+    <div class="main-scroll" id="main-scroll">
+
+      <!-- ACTION BAR -->
+      <div class="action-bar">
+        <div class="action-bar-left">
+          <button class="btn btn-income" id="btn-add-income">
+            <span>+</span> Gelir Ekle <span class="kbd">Ctrl+G</span>
+          </button>
+          <button class="btn btn-expense" id="btn-add-expense">
+            <span>+</span> Gider / Kart <span class="kbd">Ctrl+H</span>
+          </button>
+        </div>
+        <div class="action-bar-right">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" placeholder="Ara... (Ctrl+F)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- SUMMARY CARDS -->
+      <div class="summary-grid">
+        <div class="summary-card income">
+          <div class="card-header">
+            <span class="card-label">Toplam Gelir</span>
+            <div class="card-icon income">💰</div>
+          </div>
+          <div class="card-amount income" id="summary-income">₺0</div>
+          <div class="card-sub" id="summary-income-sub">Bu ay 0 gelir kaydı</div>
+          <div class="card-bg-icon">💰</div>
+        </div>
+        <div class="summary-card expense">
+          <div class="card-header">
+            <span class="card-label">Toplam Gider &amp; Borç</span>
+            <div class="card-icon expense">💸</div>
+          </div>
+          <div class="card-amount expense" id="summary-expense">₺0</div>
+          <div class="card-sub" id="summary-expense-sub">Harcama + Kart borcu</div>
+          <div class="card-bg-icon">💸</div>
+        </div>
+        <div class="summary-card net">
+          <div class="card-header">
+            <span class="card-label">Net Bakiye</span>
+            <div class="card-icon net">📈</div>
+          </div>
+          <div class="card-amount net" id="summary-net">₺0</div>
+          <div id="net-warning" class="net-warning" style="display:none">⚠️ Bütçe açık!</div>
+          <div class="card-sub" id="summary-net-sub">Gelir − (Gider + Kart)</div>
+          <div class="card-bg-icon">📈</div>
+        </div>
+      </div>
+
+      <!-- FILTER + TABLE -->
+      <div>
+        <div class="flex items-center justify-between mb-2" style="gap:12px;flex-wrap:wrap;">
+          <div class="filter-bar">
+            <button class="filter-btn active all"     data-filter="all">Tümü</button>
+            <button class="filter-btn income"         data-filter="income">💰 Gelirler</button>
+            <button class="filter-btn expense"        data-filter="expense">💸 Harcamalar</button>
+            <button class="filter-btn card"           data-filter="card">💳 Kredi Kartı</button>
+          </div>
+          <span id="table-count" style="font-size:12px;color:var(--text-muted);">0 kayıt</span>
+        </div>
+        <div class="table-container">
+          <div class="table-header-row">
+            <div class="th">Tarih</div>
+            <div class="th">Kategori</div>
+            <div class="th">Açıklama</div>
+            <div class="th">Tür</div>
+            <div class="th" style="text-align:right">Tutar</div>
+            <div class="th" style="text-align:right">İşlem</div>
+          </div>
+          <div class="table-body" id="table-body">
+            <div class="empty-state" id="empty-state">
+              <div class="empty-icon">📋</div>
+              <div class="empty-title">Henüz kayıt yok</div>
+              <div class="empty-sub">Gelir veya gider eklemek için yukarıdaki butonları kullanın</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHARTS -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-title">Aylık Gelir / Gider Karşılaştırması</div>
+              <div class="chart-sub">Son 12 ay görünümü</div>
+            </div>
+            <button class="section-toggle-btn" id="toggle-bar-chart">Gizle</button>
+          </div>
+          <div class="chart-wrapper" id="bar-chart-wrapper">
+            <canvas id="bar-chart"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-title">Harcama Kategorileri</div>
+              <div class="chart-sub">Bu ayın dağılımı</div>
+            </div>
+            <button class="section-toggle-btn" id="toggle-pie-chart">Gizle</button>
+          </div>
+          <div class="chart-wrapper" id="pie-chart-wrapper">
+            <canvas id="pie-chart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- BUDGET SECTION -->
+      <div class="budget-section" id="budget-section">
+        <div class="section-header">
+          <div class="section-title">🎯 Bütçe Takibi</div>
+          <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;" id="btn-edit-budgets">Düzenle</button>
+        </div>
+        <div class="budget-grid" id="budget-grid">
+          <div style="color:var(--text-muted);font-size:13px;padding:8px;">Bütçe hedefi belirlenmemiş. "Düzenle" butonuna tıklayın.</div>
+        </div>
+      </div>
+
+      <!-- SPACER -->
+      <div style="height:20px;"></div>
+
+    </div>
+  </main>
+</div><!-- #app -->
+
+<!-- ══════════════════════════════════════════
+     TOAST CONTAINER
+══════════════════════════════════════════ -->
+<div id="toast-container"></div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: GELİR EKLE
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-income">
+  <div class="modal income-modal" id="modal-income-box">
+    <div class="modal-header" id="modal-income-header">
+      <div class="modal-title-group">
+        <div class="modal-icon income">💰</div>
+        <div>
+          <div class="modal-title">Gelir Ekle</div>
+          <div class="modal-subtitle">Nakit akışını kaydet</div>
+        </div>
+      </div>
+      <button class="modal-close" data-close="modal-income">✕</button>
+    </div>
+    <div class="modal-header-line income"></div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Tutar</label>
+        <div class="amount-input-wrap">
+          <span class="amount-prefix">₺</span>
+          <input type="number" class="form-input" id="income-amount" placeholder="0,00" min="0" step="0.01" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Tarih</label>
+          <input type="date" class="form-input" id="income-date" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kaynak</label>
+          <select class="form-input" id="income-category">
+            <option value="💼 Maaş">💼 Maaş</option>
+            <option value="💻 Freelance">💻 Freelance</option>
+            <option value="🏠 Kira Geliri">🏠 Kira Geliri</option>
+            <option value="📈 Yatırım">📈 Yatırım</option>
+            <option value="🎁 Hediye/İkramiye">🎁 Hediye/İkramiye</option>
+            <option value="📦 Diğer">📦 Diğer</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Açıklama</label>
+        <input type="text" class="form-input" id="income-desc" placeholder="İsteğe bağlı not..." />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" data-close="modal-income">İptal</button>
+      <button class="btn-submit-income" id="btn-save-income">💰 Gelir Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: GİDER / KART
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-expense">
+  <div class="modal expense-modal" id="modal-expense-box">
+    <div class="modal-header" id="modal-expense-header">
+      <div class="modal-title-group">
+        <div class="modal-icon expense">💸</div>
+        <div>
+          <div class="modal-title">Gider / Kart Ekle</div>
+          <div class="modal-subtitle">Harcama veya kart borcu gir</div>
+        </div>
+      </div>
+      <button class="modal-close" data-close="modal-expense">✕</button>
+    </div>
+    <div class="modal-header-line expense"></div>
+    <div class="modal-body">
+      <!-- Tabs -->
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-tab="expense-tab" id="tab-expense">💸 Harcama</button>
+        <button class="modal-tab" data-tab="card-tab" id="tab-card">💳 Kart Ödemesi</button>
+      </div>
+
+      <!-- EXPENSE TAB -->
+      <div id="expense-tab">
+        <div class="category-grid" id="category-grid">
+          <button class="cat-btn" data-cat="🍔 Yemek"><span class="cat-emoji">🍔</span><span class="cat-name">Yemek</span></button>
+          <button class="cat-btn" data-cat="🛒 Market"><span class="cat-emoji">🛒</span><span class="cat-name">Market</span></button>
+          <button class="cat-btn" data-cat="🚌 Ulaşım"><span class="cat-emoji">🚌</span><span class="cat-name">Ulaşım</span></button>
+          <button class="cat-btn" data-cat="🎬 Eğlence"><span class="cat-emoji">🎬</span><span class="cat-name">Eğlence</span></button>
+          <button class="cat-btn" data-cat="🧾 Fatura"><span class="cat-emoji">🧾</span><span class="cat-name">Fatura</span></button>
+          <button class="cat-btn" data-cat="🏠 Kira"><span class="cat-emoji">🏠</span><span class="cat-name">Kira</span></button>
+          <button class="cat-btn" data-cat="💊 Sağlık"><span class="cat-emoji">💊</span><span class="cat-name">Sağlık</span></button>
+          <button class="cat-btn" data-cat="📦 Diğer"><span class="cat-emoji">📦</span><span class="cat-name">Diğer</span></button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tutar</label>
+          <div class="amount-input-wrap">
+            <span class="amount-prefix">₺</span>
+            <input type="number" class="form-input" id="expense-amount" placeholder="0,00" min="0" step="0.01" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Tarih</label>
+            <input type="date" class="form-input" id="expense-date" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ödeme Yöntemi</label>
+            <div class="payment-toggle">
+              <button class="pay-btn selected" data-pay="cash">💵 Nakit</button>
+              <button class="pay-btn" data-pay="card">💳 Kart</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Not</label>
+          <input type="text" class="form-input" id="expense-desc" placeholder="İsteğe bağlı not..." />
+        </div>
+      </div>
+
+      <!-- CARD TAB -->
+      <div id="card-tab" style="display:none;">
+        <div class="form-group">
+          <label class="form-label">Banka</label>
+          <div class="bank-grid">
+            <button class="bank-btn" data-bank="Ziraat">🏦 Ziraat</button>
+            <button class="bank-btn" data-bank="Garanti">🟢 Garanti</button>
+            <button class="bank-btn" data-bank="İş Bankası">🔵 İş Bankası</button>
+            <button class="bank-btn" data-bank="Yapı Kredi">🟡 Yapı Kredi</button>
+            <button class="bank-btn" data-bank="Akbank">🔴 Akbank</button>
+            <button class="bank-btn" data-bank="Diğer">⚪ Diğer</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Genel Toplam Borç (Bilgi Amaçlı)</label>
+          <div class="amount-input-wrap">
+            <span class="amount-prefix">₺</span>
+            <input type="number" class="form-input" id="card-total-debt" placeholder="0,00" min="0" step="0.01" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:var(--card-debt)">Bu Ayki Dönem Borcu ★</label>
+          <div class="amount-input-wrap">
+            <span class="amount-prefix">₺</span>
+            <input type="number" class="form-input" id="card-period-debt" placeholder="0,00" min="0" step="0.01" style="border-color:rgba(255,165,2,0.3);" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Son Ödeme Tarihi</label>
+            <input type="date" class="form-input" id="card-due-date" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Not</label>
+            <input type="text" class="form-input" id="card-note" placeholder="İsteğe bağlı..." />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" id="expense-modal-footer">
+      <button class="btn-cancel" data-close="modal-expense">İptal</button>
+      <button class="btn-submit-expense" id="btn-save-expense">💸 Harcama Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: DÜZENLE / SİL
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-edit">
+  <div class="modal edit-modal" id="modal-edit-box">
+    <div class="modal-header" id="modal-edit-header">
+      <div class="modal-title-group">
+        <div class="modal-icon edit">✏️</div>
+        <div>
+          <div class="modal-title">İşlemi Düzenle</div>
+          <div class="modal-subtitle">Bilgileri güncelleyin veya silin</div>
+        </div>
+      </div>
+      <button class="modal-close" data-close="modal-edit">✕</button>
+    </div>
+    <div class="modal-header-line edit"></div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Tutar</label>
+        <div class="amount-input-wrap">
+          <span class="amount-prefix">₺</span>
+          <input type="number" class="form-input" id="edit-amount" min="0" step="0.01" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Tarih</label>
+          <input type="date" class="form-input" id="edit-date" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Kategori</label>
+          <input type="text" class="form-input" id="edit-category" placeholder="Kategori" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Açıklama</label>
+        <input type="text" class="form-input" id="edit-desc" placeholder="Açıklama..." />
+      </div>
+      <div id="edit-card-fields" style="display:none;">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Banka</label>
+            <input type="text" class="form-input" id="edit-bank" placeholder="Banka adı..." />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dönem Borcu</label>
+            <div class="amount-input-wrap">
+              <span class="amount-prefix">₺</span>
+              <input type="number" class="form-input" id="edit-period-debt" min="0" step="0.01" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-delete" id="btn-delete-tx">🗑️ Sil</button>
+      <button class="btn-cancel" data-close="modal-edit">İptal</button>
+      <button class="btn-submit-income" id="btn-save-edit" style="background:linear-gradient(135deg,var(--accent),#9b6cf0);color:#fff;">💾 Güncelle</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: BÜTÇE HEDEFLERİ
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-budget">
+  <div class="modal edit-modal" id="modal-budget-box">
+    <div class="modal-header" id="modal-budget-header">
+      <div class="modal-title-group">
+        <div class="modal-icon edit">🎯</div>
+        <div>
+          <div class="modal-title">Bütçe Hedefleri</div>
+          <div class="modal-subtitle">Kategori başına aylık limit belirle</div>
+        </div>
+      </div>
+      <button class="modal-close" data-close="modal-budget">✕</button>
+    </div>
+    <div class="modal-header-line edit"></div>
+    <div class="modal-body">
+      <div class="budget-form-grid" id="budget-form-grid"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" data-close="modal-budget">İptal</button>
+      <button class="btn-submit-income" id="btn-save-budgets" style="background:linear-gradient(135deg,var(--accent),#9b6cf0);color:#fff;">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: TEKRARLAYAN İŞLEMLER
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-recurring">
+  <div class="modal edit-modal" id="modal-recurring-box">
+    <div class="modal-header" id="modal-recurring-header">
+      <div class="modal-title-group">
+        <div class="modal-icon edit">🔁</div>
+        <div>
+          <div class="modal-title">Tekrarlayan İşlemler</div>
+          <div class="modal-subtitle">Sabit gider/gelir tanımla</div>
+        </div>
+      </div>
+      <button class="modal-close" data-close="modal-recurring">✕</button>
+    </div>
+    <div class="modal-header-line edit"></div>
+    <div class="modal-body">
+      <div class="recurring-list" id="recurring-list"></div>
+      <div style="border-top:1px solid var(--border);padding-top:14px;">
+        <div class="form-group">
+          <label class="form-label">Tür</label>
+          <div class="payment-toggle">
+            <button class="pay-btn selected" data-rtype="expense">💸 Gider</button>
+            <button class="pay-btn" data-rtype="income">💰 Gelir</button>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Tutar</label>
+            <div class="amount-input-wrap">
+              <span class="amount-prefix">₺</span>
+              <input type="number" class="form-input" id="recurring-amount" placeholder="0,00" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ayın Günü</label>
+            <input type="number" class="form-input" id="recurring-day" placeholder="1-31" min="1" max="31" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Kategori</label>
+            <input type="text" class="form-input" id="recurring-cat" placeholder="🏠 Kira" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Açıklama</label>
+            <input type="text" class="form-input" id="recurring-desc" placeholder="Açıklama..." />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" data-close="modal-recurring">Kapat</button>
+      <button class="btn-accent btn" id="btn-apply-recurring" style="font-size:13px;">🔄 Bu Aya Uygula</button>
+      <button class="btn-submit-income" id="btn-add-recurring-item">+ Ekle</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: KARTLARIM
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-cards">
+  <div class="modal edit-modal" id="modal-cards-box">
+    <div class="modal-header" id="modal-cards-header">
+      <div class="modal-title-group">
+        <div class="modal-icon edit">💳</div>
+        <div>
+          <div class="modal-title">Kartlarım</div>
+          <div class="modal-subtitle">Kredi kartı yönetimi</div>
+        </div>
+      </div>
+      <button class="modal-close" data-close="modal-cards">✕</button>
+    </div>
+    <div class="modal-header-line edit"></div>
+    <div class="modal-body">
+      <div class="cards-list" id="cards-list"></div>
+      <div style="border-top:1px solid var(--border);padding-top:14px;">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Banka Adı</label>
+            <input type="text" class="form-input" id="new-card-bank" placeholder="Garanti..." />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Limit</label>
+            <div class="amount-input-wrap">
+              <span class="amount-prefix">₺</span>
+              <input type="number" class="form-input" id="new-card-limit" placeholder="0" />
+            </div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Hesap Kesim Günü</label>
+            <input type="number" class="form-input" id="new-card-closing" placeholder="1-31" min="1" max="31" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Son Ödeme Günü</label>
+            <input type="number" class="form-input" id="new-card-due" placeholder="1-31" min="1" max="31" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" data-close="modal-cards">Kapat</button>
+      <button class="btn-submit-card" id="btn-add-card-item">💳 Kart Ekle</button>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

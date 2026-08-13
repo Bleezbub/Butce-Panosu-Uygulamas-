@@ -1,0 +1,17 @@
+{
+  "name": "fintrack",
+  "version": "1.0.0",
+  "description": "Modern Gelir/Gider Masraf Takip Uygulaması",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "keywords": ["finance", "tracker", "electron"],
+  "author": "FinTrack",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^29.1.4"
+  }
+}
